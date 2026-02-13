@@ -7,11 +7,11 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -27,12 +27,10 @@ class MovieListViewModelTest {
     private lateinit var getPopularMoviesUseCase: GetPopularMoviesUseCase
     private lateinit var searchMoviesUseCase: SearchMoviesUseCase
     private lateinit var viewModel: MovieListViewModel
-    private val testDispatcher = StandardTestDispatcher()
-
 
     @Before
     fun setup() {
-        Dispatchers.setMain(testDispatcher)
+        Dispatchers.setMain(UnconfinedTestDispatcher())
         getPopularMoviesUseCase = mockk(relaxed = true)
         searchMoviesUseCase = mockk(relaxed = true)
         // Mock the initial loadMovies() call in init block to return a movie
