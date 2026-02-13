@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.movie_app.domain.model.MovieDetails
 import com.example.movie_app.domain.usecase.GetMovieDetailsUseCase
+import com.example.movie_app.presentation.util.ErrorHandler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -44,7 +45,7 @@ class MovieDetailsViewModel @Inject constructor(
                 .catch { e ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        error = e.message ?: "Failed to load movie details"
+                        error = ErrorHandler.getErrorMessage(e)
                     )
                 }
                 .collect { result ->
@@ -52,13 +53,14 @@ class MovieDetailsViewModel @Inject constructor(
                         val details = result.getOrNull()
                         _uiState.value = _uiState.value.copy(
                             movieDetails = details,
-                            isLoading = false
+                            isLoading = false,
+                            error = null // Clear any previous errors on success
                         )
                     } else {
                         val error = result.exceptionOrNull()
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
-                            error = error?.message ?: "Failed to load movie details"
+                            error = ErrorHandler.getErrorMessage(error)
                         )
                     }
                 }

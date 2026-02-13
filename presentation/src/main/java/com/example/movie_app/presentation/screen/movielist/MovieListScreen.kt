@@ -1,18 +1,25 @@
 package com.example.movie_app.presentation.screen.movielist
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
+import androidx.compose.ui.Alignment
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -27,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.movie_app.presentation.designsystem.atoms.LoadingIndicator
+import com.example.movie_app.presentation.designsystem.molecules.EmptyState
 import com.example.movie_app.presentation.designsystem.molecules.ErrorMessage
 import com.example.movie_app.presentation.designsystem.organisms.MovieCard
 import com.example.movie_app.presentation.viewmodel.MovieListViewModel
@@ -113,29 +121,75 @@ fun MovieListScreen(
                             onRetry = { viewModel.retry() }
                         )
                     }
+                    uiState.movies.isEmpty() && !uiState.isLoading && uiState.isSearchMode -> {
+                        // Empty search results
+                        EmptyState(
+                            message = "No movies found for \"${uiState.searchQuery}\".\n\nTry a different search term."
+                        )
+                    }
+                    uiState.movies.isEmpty() && !uiState.isLoading && !uiState.isSearchMode -> {
+                        // Empty popular movies (shouldn't happen, but handle gracefully)
+                        EmptyState(
+                            message = "No movies available at the moment.\n\nPlease try again later."
+                        )
+                    }
                     else -> {
-                        LazyColumn(
-                            state = listState,
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp)
-                        ) {
-                            items(
-                                items = uiState.movies,
-                                key = { it.id }
-                            ) { movie ->
-                                MovieCard(
-                                    movie = movie,
-                                    onClick = { onMovieClick(movie.id) },
-                                    modifier = Modifier.padding(vertical = 8.dp)
-                                )
-                            }
-
-                            // Loading indicator at the bottom for pagination
-                            if (uiState.isLoading && uiState.movies.isNotEmpty()) {
-                                item {
-                                    LoadingIndicator(
-                                        modifier = Modifier.fillMaxWidth()
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            // Show error banner if there's an error but we have movies
+                            if (uiState.error != null && uiState.movies.isNotEmpty()) {
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.errorContainer
                                     )
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(12.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = uiState.error ?: "An error occurred",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onErrorContainer,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        TextButton(
+                                            onClick = { viewModel.clearError() }
+                                        ) {
+                                            Text("Dismiss")
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            LazyColumn(
+                                state = listState,
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp)
+                            ) {
+                                items(
+                                    items = uiState.movies,
+                                    key = { it.id }
+                                ) { movie ->
+                                    MovieCard(
+                                        movie = movie,
+                                        onClick = { onMovieClick(movie.id) },
+                                        modifier = Modifier.padding(vertical = 8.dp)
+                                    )
+                                }
+
+                                // Loading indicator at the bottom for pagination
+                                if (uiState.isLoading && uiState.movies.isNotEmpty()) {
+                                    item {
+                                        LoadingIndicator(
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
                                 }
                             }
                         }

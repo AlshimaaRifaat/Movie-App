@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.movie_app.domain.model.Movie
 import com.example.movie_app.domain.usecase.GetPopularMoviesUseCase
 import com.example.movie_app.domain.usecase.SearchMoviesUseCase
+import com.example.movie_app.presentation.util.ErrorHandler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -63,7 +64,7 @@ class MovieListViewModel @Inject constructor(
                 .catch { e ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        error = e.message ?: "Unknown error occurred"
+                        error = ErrorHandler.getErrorMessage(e)
                     )
                 }
                 .collect { result ->
@@ -73,13 +74,14 @@ class MovieListViewModel @Inject constructor(
                             movies = _uiState.value.movies + movies,
                             isLoading = false,
                             currentPage = page + 1,
-                            hasMore = movies.isNotEmpty()
+                            hasMore = movies.isNotEmpty(),
+                            error = null // Clear any previous errors on success
                         )
                     } else {
                         val error = result.exceptionOrNull()
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
-                            error = error?.message ?: "Failed to load movies"
+                            error = ErrorHandler.getErrorMessage(error)
                         )
                     }
                 }
@@ -122,7 +124,7 @@ class MovieListViewModel @Inject constructor(
                 .catch { e ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        error = e.message ?: "Search failed"
+                        error = ErrorHandler.getErrorMessage(e)
                     )
                 }
                 .collect { result ->
@@ -132,13 +134,14 @@ class MovieListViewModel @Inject constructor(
                             movies = movies,
                             isLoading = false,
                             currentPage = 2,
-                            hasMore = movies.isNotEmpty()
+                            hasMore = movies.isNotEmpty(),
+                            error = null // Clear any previous errors on success
                         )
                     } else {
                         val error = result.exceptionOrNull()
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
-                            error = error?.message ?: "Search failed"
+                            error = ErrorHandler.getErrorMessage(error)
                         )
                     }
                 }
