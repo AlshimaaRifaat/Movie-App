@@ -56,7 +56,6 @@ The app follows **Clean Architecture** principles with clear separation of conce
 
 ### Dependency Injection
 - **Hilt (Dagger)**: Type-safe dependency injection
-- **KSP**: Kotlin Symbol Processing for code generation
 - **Component Scopes**:
   - `SingletonComponent`: Used for repositories and network components (app lifetime)
   - `ViewModelComponent`: Used for use cases provided to ViewModels
