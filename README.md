@@ -97,7 +97,7 @@ The app follows **Atomic Design** principles:
 - Exposed via BuildConfig in the data module
 - ProGuard rules configured for release builds
 
-## 📦 Setup
+## Setup
 
 ### Prerequisites
 - Android Studio Hedgehog or later
@@ -151,7 +151,7 @@ tmdbApiKey=your_api_key_here
 - **Interface Segregation**: Focused interfaces
 - **Dependency Inversion**: High-level modules don't depend on low-level modules
 
-## 🚀 Future Enhancements
+## Future Enhancements
 
 ### Planned Features
 - **Favorites**: Save favorite movies locally
@@ -178,7 +178,7 @@ tmdbApiKey=your_api_key_here
 - **Crash Reporting**: Firebase Crashlytics integration
 - **Analytics**: User behavior tracking
 
-## 🎯 What Makes This App Stand Out
+## What Makes This App Stand Out
 
 ### Code Quality
 - ✅ **Clean Architecture**: Proper separation of concerns
