@@ -1,0 +1,166 @@
+package com.example.movie_app.presentation.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.movie_app.domain.model.Movie
+import com.example.movie_app.domain.usecase.GetPopularMoviesUseCase
+import com.example.movie_app.domain.usecase.SearchMoviesUseCase
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+/**
+ * UI state for the movie list screen.
+ */
+data class MovieListUiState(
+    val movies: List<Movie> = emptyList(),
+    val isLoading: Boolean = false,
+    val error: String? = null,
+    val currentPage: Int = 1,
+    val hasMore: Boolean = true,
+    val searchQuery: String = "",
+    val isSearchMode: Boolean = false
+)
+
+/**
+ * ViewModel for the movie list screen.
+ * Implements MVVM architecture pattern.
+ */
+@HiltViewModel
+class MovieListViewModel @Inject constructor(
+    private val getPopularMoviesUseCase: GetPopularMoviesUseCase,
+    private val searchMoviesUseCase: SearchMoviesUseCase
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(MovieListUiState())
+    val uiState: StateFlow<MovieListUiState> = _uiState.asStateFlow()
+
+    init {
+        loadMovies()
+    }
+
+    /**
+     * Loads popular movies for the current page.
+     */
+    fun loadMovies() {
+        if (_uiState.value.isLoading || !_uiState.value.hasMore) return
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+
+            val page = _uiState.value.currentPage
+            val useCase = if (_uiState.value.isSearchMode) {
+                searchMoviesUseCase(_uiState.value.searchQuery, page)
+            } else {
+                getPopularMoviesUseCase(page)
+            }
+
+            useCase
+                .catch { e ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = e.message ?: "Unknown error occurred"
+                    )
+                }
+                .collect { result ->
+                    if (result.isSuccess) {
+                        val movies = result.getOrNull() ?: emptyList()
+                        _uiState.value = _uiState.value.copy(
+                            movies = _uiState.value.movies + movies,
+                            isLoading = false,
+                            currentPage = page + 1,
+                            hasMore = movies.isNotEmpty()
+                        )
+                    } else {
+                        val error = result.exceptionOrNull()
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            error = error?.message ?: "Failed to load movies"
+                        )
+                    }
+                }
+        }
+    }
+
+    /**
+     * Searches for movies with the given query.
+     */
+    fun searchMovies(query: String) {
+        viewModelScope.launch {
+            if (query.isBlank()) {
+                // Reset to popular movies mode.
+                // Important: isLoading must be false before calling loadMovies(),
+                // otherwise loadMovies() will early-return and we end up stuck loading.
+                _uiState.value = _uiState.value.copy(
+                    searchQuery = "",
+                    isSearchMode = false,
+                    movies = emptyList(),
+                    currentPage = 1,
+                    hasMore = true,
+                    isLoading = false,
+                    error = null
+                )
+                loadMovies()
+                return@launch
+            }
+
+            _uiState.value = _uiState.value.copy(
+                searchQuery = query,
+                isSearchMode = true,
+                movies = emptyList(),
+                currentPage = 1,
+                hasMore = true,
+                isLoading = true,
+                error = null
+            )
+
+            searchMoviesUseCase(query, 1)
+                .catch { e ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = e.message ?: "Search failed"
+                    )
+                }
+                .collect { result ->
+                    if (result.isSuccess) {
+                        val movies = result.getOrNull() ?: emptyList()
+                        _uiState.value = _uiState.value.copy(
+                            movies = movies,
+                            isLoading = false,
+                            currentPage = 2,
+                            hasMore = movies.isNotEmpty()
+                        )
+                    } else {
+                        val error = result.exceptionOrNull()
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            error = error?.message ?: "Search failed"
+                        )
+                    }
+                }
+        }
+    }
+
+    /**
+     * Clears the error state.
+     */
+    fun clearError() {
+        _uiState.value = _uiState.value.copy(error = null)
+    }
+
+    /**
+     * Retries loading movies.
+     */
+    fun retry() {
+        if (_uiState.value.isSearchMode) {
+            searchMovies(_uiState.value.searchQuery)
+        } else {
+            loadMovies()
+        }
+    }
+}
+

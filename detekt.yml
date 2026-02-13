@@ -1,0 +1,29 @@
+# Detekt configuration file
+# See: https://detekt.github.io/detekt/configurations.html
+
+build:
+  maxIssues: 10
+  weights:
+    complexity: 2
+    LongParameterList: 1
+    style: 1
+    comments: 1
+
+complexity:
+  LongParameterList:
+    threshold: 6
+  LongMethod:
+    threshold: 50
+  ComplexMethod:
+    threshold: 10
+
+style:
+  MagicNumber:
+    ignoreNumbers: ['-1', '0', '1', '2']
+  MaxLineLength:
+    maxLineLength: 120
+
+formatting:
+  active: true
+  autoCorrect: false
+
