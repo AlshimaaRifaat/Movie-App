@@ -6,8 +6,10 @@ import com.example.movie_app.domain.repository.MovieRepository
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -38,7 +40,9 @@ class GetPopularMoviesUseCaseTest {
 
         useCase(1).test {
             val result = awaitItem()
+            assertTrue(result.isSuccess)
             assertEquals(mockMovies, result.getOrNull())
+            awaitComplete()
         }
     }
 
@@ -51,7 +55,10 @@ class GetPopularMoviesUseCaseTest {
         }
 
         useCase().test {
-            awaitItem()
+            val result = awaitItem()
+            assertTrue(result.isSuccess)
+            assertEquals(mockMovies, result.getOrNull())
+            awaitComplete()
         }
     }
 
@@ -69,4 +76,3 @@ class GetPopularMoviesUseCaseTest {
         )
     }
 }
-

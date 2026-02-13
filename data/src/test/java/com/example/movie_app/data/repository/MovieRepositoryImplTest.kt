@@ -55,6 +55,7 @@ class MovieRepositoryImplTest {
             val movies = result.getOrNull()!!
             assertEquals(1, movies.size)
             assertEquals("Test Movie", movies[0].title)
+            awaitComplete()
         }
     }
 
@@ -66,8 +67,74 @@ class MovieRepositoryImplTest {
         repository.getPopularMovies(1).test {
             val result = awaitItem()
             assertTrue(result.isFailure)
-            assertEquals(error, result.exceptionOrNull())
+            val exception = result.exceptionOrNull()
+            assertTrue(exception is Exception)
+            assertEquals("Network error", exception?.message)
+            awaitComplete()
+        }
+    }
+    
+    @Test
+    fun `getMovieDetails maps DTO to domain model`() = runTest {
+        val mockDetails = com.example.movie_app.data.dto.MovieDetailsDto(
+            id = 1,
+            title = "Test Movie",
+            overview = "Overview",
+            posterPath = "/poster.jpg",
+            backdropPath = "/backdrop.jpg",
+            releaseDate = "2024-01-01",
+            voteAverage = 8.5,
+            voteCount = 1000,
+            popularity = 100.0,
+            runtime = 120,
+            genres = listOf(com.example.movie_app.data.dto.GenreDto(1, "Action")),
+            productionCompanies = listOf(com.example.movie_app.data.dto.ProductionCompanyDto(1, "Studio", "/logo.jpg")),
+            tagline = "Tagline"
+        )
+
+        coEvery { apiService.getMovieDetails(1) } returns mockDetails
+
+        repository.getMovieDetails(1).test {
+            val result = awaitItem()
+            assertTrue(result.isSuccess)
+            val details = result.getOrNull()!!
+            assertEquals("Test Movie", details.title)
+            assertEquals(120, details.runtime)
+            assertEquals(1, details.genres.size)
+            awaitComplete()
+        }
+    }
+    
+    @Test
+    fun `searchMovies maps DTOs to domain models`() = runTest {
+        val mockResponse = MoviesResponseDto(
+            page = 1,
+            results = listOf(
+                MovieDto(
+                    id = 1,
+                    title = "Search Movie",
+                    overview = "Overview",
+                    posterPath = "/poster.jpg",
+                    backdropPath = "/backdrop.jpg",
+                    releaseDate = "2024-01-01",
+                    voteAverage = 8.5,
+                    voteCount = 1000,
+                    popularity = 100.0
+                )
+            ),
+            totalPages = 10,
+            totalResults = 100
+        )
+
+        coEvery { apiService.searchMovies(query = "test", page = 1) } returns mockResponse
+
+        repository.searchMovies("test", 1).test {
+            val result = awaitItem()
+            assertTrue(result.isSuccess)
+            val movies = result.getOrNull()!!
+            assertEquals(1, movies.size)
+            assertEquals("Search Movie", movies[0].title)
+            awaitComplete()
         }
     }
 }
-

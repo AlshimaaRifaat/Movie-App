@@ -1,13 +1,18 @@
 package com.example.movie_app.presentation.viewmodel
 
-import app.cash.turbine.test
 import com.example.movie_app.domain.model.Movie
 import com.example.movie_app.domain.usecase.GetPopularMoviesUseCase
 import com.example.movie_app.domain.usecase.SearchMoviesUseCase
 import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -22,67 +27,82 @@ class MovieListViewModelTest {
     private lateinit var getPopularMoviesUseCase: GetPopularMoviesUseCase
     private lateinit var searchMoviesUseCase: SearchMoviesUseCase
     private lateinit var viewModel: MovieListViewModel
+    private val testDispatcher = StandardTestDispatcher()
+
 
     @Before
     fun setup() {
-        getPopularMoviesUseCase = mockk()
-        searchMoviesUseCase = mockk()
+        Dispatchers.setMain(testDispatcher)
+        getPopularMoviesUseCase = mockk(relaxed = true)
+        searchMoviesUseCase = mockk(relaxed = true)
+        // Mock the initial loadMovies() call in init block to return a movie
+        // so that hasMore is true and we can test pagination.
+        coEvery { getPopularMoviesUseCase(1) } returns flow {
+            emit(Result.success(listOf(createMockMovie(0, "Initial Movie"))))
+        }
         viewModel = MovieListViewModel(getPopularMoviesUseCase, searchMoviesUseCase)
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
     }
 
     @Test
     fun `initial state is correct`() = runTest {
-        viewModel.uiState.test {
-            val state = awaitItem()
-            assertTrue(state.movies.isEmpty())
-            assertFalse(state.isLoading)
-            assertEquals(null, state.error)
-            assertEquals(1, state.currentPage)
-            assertTrue(state.hasMore)
-        }
+        advanceUntilIdle() // Wait for init block to complete
+        val state = viewModel.uiState.value
+        assertEquals(1, state.movies.size)
+        assertFalse(state.isLoading)
+        assertEquals(null, state.error)
+        assertEquals(2, state.currentPage)
+        assertTrue(state.hasMore)
     }
 
     @Test
-    fun `loadMovies success updates state correctly`() = runTest {
+    fun `loadMovies success appends movies to state`() = runTest {
+        advanceUntilIdle() // Init loads page 1
+
         val mockMovies = listOf(
             createMockMovie(1, "Movie 1"),
             createMockMovie(2, "Movie 2")
         )
-
-        coEvery { getPopularMoviesUseCase(1) } returns flow {
-            emit(Result.success(mockMovies))
-        }
+        // Mock for page 2
+        coEvery { getPopularMoviesUseCase(2) } returns flow { emit(Result.success(mockMovies)) }
 
         viewModel.loadMovies()
+        advanceUntilIdle()
 
-        viewModel.uiState.test {
-            skipItems(1) // Skip initial state
-            val state = awaitItem()
-            assertEquals(2, state.movies.size)
-            assertFalse(state.isLoading)
-            assertEquals(2, state.currentPage)
-        }
+        val state = viewModel.uiState.value
+        assertEquals(3, state.movies.size) // 1 initial + 2 new
+        assertFalse(state.isLoading)
+        assertTrue(state.hasMore)
+        assertEquals(3, state.currentPage)
+        assertEquals(null, state.error)
     }
 
     @Test
     fun `loadMovies failure updates error state`() = runTest {
-        val errorMessage = "Network error"
-        coEvery { getPopularMoviesUseCase(1) } returns flow {
-            emit(Result.failure(Exception(errorMessage)))
-        }
+        advanceUntilIdle() // Init loads page 1
+
+        val error = java.net.UnknownHostException("Network error")
+        // Mock for page 2 to fail
+        coEvery { getPopularMoviesUseCase(2) } returns flow { emit(Result.failure(error)) }
 
         viewModel.loadMovies()
+        advanceUntilIdle()
 
-        viewModel.uiState.test {
-            skipItems(1) // Skip initial state
-            val state = awaitItem()
-            assertEquals(errorMessage, state.error)
-            assertFalse(state.isLoading)
-        }
+        val state = viewModel.uiState.value
+        assertTrue(state.error != null)
+        assertTrue(state.error!!.contains("No internet connection"))
+        assertFalse(state.isLoading)
+        assertEquals(1, state.movies.size) // list is unchanged
+        assertEquals(2, state.currentPage) // page does not advance
     }
 
     @Test
     fun `searchMovies updates search query and results`() = runTest {
+        advanceUntilIdle()
         val query = "test"
         val mockMovies = listOf(createMockMovie(1, "Test Movie"))
 
@@ -91,31 +111,72 @@ class MovieListViewModelTest {
         }
 
         viewModel.searchMovies(query)
+        advanceUntilIdle()
 
-        viewModel.uiState.test {
-            skipItems(1) // Skip initial state
-            val state = awaitItem()
-            assertEquals(query, state.searchQuery)
-            assertTrue(state.isSearchMode)
-            assertEquals(1, state.movies.size)
-        }
+        val state = viewModel.uiState.value
+        assertEquals(query, state.searchQuery)
+        assertTrue(state.isSearchMode)
+        assertEquals(1, state.movies.size)
+        assertFalse(state.isLoading)
+        assertEquals(null, state.error)
     }
 
     @Test
     fun `clearError removes error from state`() = runTest {
-        val errorMessage = "Error"
-        coEvery { getPopularMoviesUseCase(1) } returns flow {
-            emit(Result.failure(Exception(errorMessage)))
-        }
+        advanceUntilIdle() // Init loads page 1
 
+        val error = java.io.IOException("Some error")
+        coEvery { getPopularMoviesUseCase(2) } returns flow { emit(Result.failure(error)) }
+        
         viewModel.loadMovies()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.error != null)
+
         viewModel.clearError()
 
-        viewModel.uiState.test {
-            skipItems(2) // Skip initial and error state
-            val state = awaitItem()
-            assertEquals(null, state.error)
-        }
+        assertEquals(null, viewModel.uiState.value.error)
+    }
+    
+    @Test
+    fun `retry with popular movies calls loadMovies`() = runTest {
+        advanceUntilIdle()
+        // initial state: not search mode
+
+        val mockMovies = listOf(createMockMovie(1, "Movie 1"))
+        coEvery { getPopularMoviesUseCase(2) } returns flow { emit(Result.success(mockMovies)) }
+
+        viewModel.retry()
+        advanceUntilIdle()
+
+        assertEquals(2, viewModel.uiState.value.movies.size)
+        assertEquals(3, viewModel.uiState.value.currentPage)
+    }
+    
+    @Test
+    fun `retry with search calls searchMovies`() = runTest {
+        advanceUntilIdle()
+        val query = "test"
+        val searchResults = listOf(createMockMovie(10, "Search Result"))
+        coEvery { searchMoviesUseCase(query, 1) } returns flow { emit(Result.success(searchResults)) }
+
+        // Enter search mode
+        viewModel.searchMovies(query)
+        advanceUntilIdle()
+        
+        assertEquals(query, viewModel.uiState.value.searchQuery)
+        assertEquals(1, viewModel.uiState.value.movies.size)
+
+        // Mock retry call
+        val moreSearchResults = listOf(createMockMovie(11, "More Search Results"))
+        coEvery { searchMoviesUseCase(query, 1) } returns flow { emit(Result.success(moreSearchResults)) }
+
+        viewModel.retry()
+        advanceUntilIdle()
+        
+        // Retry in search mode re-runs the search, replacing movies
+        assertEquals(1, viewModel.uiState.value.movies.size) 
+        assertEquals("More Search Results", viewModel.uiState.value.movies.first().title)
     }
 
     private fun createMockMovie(id: Int, title: String): Movie {
@@ -132,4 +193,3 @@ class MovieListViewModelTest {
         )
     }
 }
-
