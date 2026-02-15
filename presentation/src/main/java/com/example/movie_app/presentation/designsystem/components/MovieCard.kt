@@ -15,9 +15,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.movie_app.domain.model.Movie
+import com.example.movie_app.presentation.designsystem.theme.MovieAppTheme
 
 /**
  * Organism component: Movie card.
@@ -69,6 +71,27 @@ fun MovieCard(
                 )
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun MovieCardPreview() {
+    MovieAppTheme {
+        MovieCard(
+            movie = Movie(
+                id = 1,
+                title = "The Dark Knight",
+                overview = "When the menace known as the Joker wreaks havoc and chaos on the people of Gotham, Batman must accept one of the greatest psychological and physical tests of his ability to fight injustice.",
+                posterPath = "/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
+                backdropPath = "/hqkIcbrOHL86JcnxY3YeQ4qoqA1.jpg",
+                releaseDate = "2008-07-18",
+                voteAverage = 9.0,
+                voteCount = 25000,
+                popularity = 100.0
+            ),
+            onClick = {}
+        )
     }
 }
 

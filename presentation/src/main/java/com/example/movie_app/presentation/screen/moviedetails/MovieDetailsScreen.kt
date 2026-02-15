@@ -25,13 +25,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.example.movie_app.domain.model.Genre
+import com.example.movie_app.domain.model.MovieDetails
+import com.example.movie_app.domain.model.ProductionCompany
 import com.example.movie_app.presentation.designsystem.components.LoadingIndicator
 import com.example.movie_app.presentation.designsystem.components.ErrorMessage
+import com.example.movie_app.presentation.designsystem.theme.MovieAppTheme
 import com.example.movie_app.presentation.viewmodel.MovieDetailsViewModel
 
 /**
@@ -57,7 +63,7 @@ fun MovieDetailsScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
@@ -184,6 +190,188 @@ fun MovieDetailsScreen(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true, name = "Movie Details - Content")
+@Composable
+private fun MovieDetailsScreenPreview() {
+    MovieAppTheme {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Movie Details") },
+                    navigationIcon = {
+                        IconButton(onClick = {}) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back"
+                            )
+                        }
+                    }
+                )
+            }
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                // Backdrop image
+                AsyncImage(
+                    model = "https://image.tmdb.org/t/p/w1280/hqkIcbrOHL86JcnxY3YeQ4qoqA1.jpg",
+                    contentDescription = "The Dark Knight",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp),
+                    contentScale = ContentScale.Crop
+                )
+
+                // Movie details
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "The Dark Knight",
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Text(
+                        text = "Why So Serious?",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "Rating: 9.0/10",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Text(
+                                text = "Votes: 25000",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = "Runtime: 152 minutes",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = "Release Date: 2008-07-18",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = "Genres: Action, Crime, Drama",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Text(
+                        text = "Overview",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "When the menace known as the Joker wreaks havoc and chaos on the people of Gotham, Batman must accept one of the greatest psychological and physical tests of his ability to fight injustice.",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+
+                    Text(
+                        text = "Production Companies",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                    Text(
+                        text = "• Warner Bros. Pictures",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = "• Legendary Pictures",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true, name = "Movie Details - Loading")
+@Composable
+private fun MovieDetailsScreenLoadingPreview() {
+    MovieAppTheme {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Movie Details") },
+                    navigationIcon = {
+                        IconButton(onClick = {}) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back"
+                            )
+                        }
+                    }
+                )
+            }
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                LoadingIndicator()
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true, name = "Movie Details - Error")
+@Composable
+private fun MovieDetailsScreenErrorPreview() {
+    MovieAppTheme {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Movie Details") },
+                    navigationIcon = {
+                        IconButton(onClick = {}) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back"
+                            )
+                        }
+                    }
+                )
+            }
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                ErrorMessage(
+                    message = "No internet connection. Please check your network settings and try again.",
+                    onRetry = {}
+                )
             }
         }
     }

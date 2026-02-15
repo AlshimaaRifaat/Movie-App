@@ -31,12 +31,15 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.movie_app.domain.model.Movie
 import com.example.movie_app.presentation.designsystem.components.LoadingIndicator
 import com.example.movie_app.presentation.designsystem.components.EmptyState
 import com.example.movie_app.presentation.designsystem.components.ErrorMessage
 import com.example.movie_app.presentation.designsystem.components.MovieCard
+import com.example.movie_app.presentation.designsystem.theme.MovieAppTheme
 import com.example.movie_app.presentation.viewmodel.MovieListViewModel
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -195,6 +198,142 @@ fun MovieListScreen(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true, name = "Movie List - With Movies")
+@Composable
+private fun MovieListScreenPreview() {
+    MovieAppTheme {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Movies") }
+                )
+            }
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                TextField(
+                    value = "",
+                    onValueChange = {},
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    placeholder = { Text("Search movies...") },
+                    singleLine = true
+                )
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp)
+                ) {
+                    items(
+                        items = listOf(
+                            Movie(
+                                id = 1,
+                                title = "The Dark Knight",
+                                overview = "When the menace known as the Joker wreaks havoc and chaos on the people of Gotham, Batman must accept one of the greatest psychological and physical tests of his ability to fight injustice.",
+                                posterPath = "/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
+                                backdropPath = "/hqkIcbrOHL86JcnxY3YeQ4qoqA1.jpg",
+                                releaseDate = "2008-07-18",
+                                voteAverage = 9.0,
+                                voteCount = 25000,
+                                popularity = 100.0
+                            ),
+                            Movie(
+                                id = 2,
+                                title = "Inception",
+                                overview = "A skilled thief is given a chance at redemption if he can pull off an impossible task: Inception.",
+                                posterPath = "/oYuLEt3zVCKq57qu2F8dT7NIa6f.jpg",
+                                backdropPath = "/s3TBrRGB1iav7gFOCNx3H31MoES.jpg",
+                                releaseDate = "2010-07-16",
+                                voteAverage = 8.8,
+                                voteCount = 30000,
+                                popularity = 95.0
+                            )
+                        ),
+                        key = { it.id }
+                    ) { movie ->
+                        MovieCard(
+                            movie = movie,
+                            onClick = {},
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true, name = "Movie List - Loading")
+@Composable
+private fun MovieListScreenLoadingPreview() {
+    MovieAppTheme {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Movies") }
+                )
+            }
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                TextField(
+                    value = "",
+                    onValueChange = {},
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    placeholder = { Text("Search movies...") },
+                    singleLine = true
+                )
+                LoadingIndicator()
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true, name = "Movie List - Empty Search")
+@Composable
+private fun MovieListScreenEmptySearchPreview() {
+    MovieAppTheme {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Movies") }
+                )
+            }
+        ) { paddingValues ->
+            Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+                TextField(
+                    value = "test",
+                    onValueChange = {},
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    placeholder = { Text("Search movies...") },
+                    singleLine = true
+                )
+                EmptyState(
+                    message = "No movies found for \"test\".\n\nTry a different search term."
+                )
             }
         }
     }

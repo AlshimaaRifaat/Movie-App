@@ -10,7 +10,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.movie_app.presentation.designsystem.theme.MovieAppTheme
 
 /**
  * Molecule component: Error message display.
@@ -38,6 +40,17 @@ fun ErrorMessage(
         ) {
             Text("Retry")
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ErrorMessagePreview() {
+    MovieAppTheme {
+        ErrorMessage(
+            message = "No internet connection. Please check your network settings and try again.",
+            onRetry = {}
+        )
     }
 }
 
