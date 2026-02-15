@@ -225,16 +225,5 @@ tmdbApiKey=your_api_key_here
 - **Loading States**: Custom `Result` sealed class with Loading, Success, and Error states
 - **Empty States**: Helpful messages when no content is available
 
-### Developer Experience
-- **Type-Safe Navigation**: Compile-time navigation safety
-- **Design System**: Component-based design with reusable UI components organized in a components folder
-- **Preview Composables**: All UI components include `@Preview` functions for Android Studio's Design panel
-- **White Label Support**: Easy customization through centralized theming
-- **Code Quality Tools**: Detekt, ProGuard configured
-- **Comprehensive Testing**: Unit tests for ViewModels, Use Cases, and Repositories with MockK and Turbine
-  - Tests cover autocomplete functionality and edge cases
-  - Tests verify proper state management with Result sealed class
-
-
 **Note**: This app uses The Movie Database (TMDB) API. Make sure to add your API key to `local.properties` before running the app.
 
