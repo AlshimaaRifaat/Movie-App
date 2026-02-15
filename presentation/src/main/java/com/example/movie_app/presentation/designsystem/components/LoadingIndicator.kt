@@ -1,4 +1,4 @@
-package com.example.movie_app.presentation.designsystem.atoms
+package com.example.movie_app.presentation.designsystem.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize

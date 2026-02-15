@@ -1,4 +1,4 @@
-package com.example.movie_app.presentation.designsystem.organisms
+package com.example.movie_app.presentation.designsystem.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement

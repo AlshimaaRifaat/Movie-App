@@ -30,8 +30,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.example.movie_app.presentation.designsystem.atoms.LoadingIndicator
-import com.example.movie_app.presentation.designsystem.molecules.ErrorMessage
+import com.example.movie_app.presentation.designsystem.components.LoadingIndicator
+import com.example.movie_app.presentation.designsystem.components.ErrorMessage
 import com.example.movie_app.presentation.viewmodel.MovieDetailsViewModel
 
 /**

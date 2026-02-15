@@ -33,10 +33,10 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.movie_app.presentation.designsystem.atoms.LoadingIndicator
-import com.example.movie_app.presentation.designsystem.molecules.EmptyState
-import com.example.movie_app.presentation.designsystem.molecules.ErrorMessage
-import com.example.movie_app.presentation.designsystem.organisms.MovieCard
+import com.example.movie_app.presentation.designsystem.components.LoadingIndicator
+import com.example.movie_app.presentation.designsystem.components.EmptyState
+import com.example.movie_app.presentation.designsystem.components.ErrorMessage
+import com.example.movie_app.presentation.designsystem.components.MovieCard
 import com.example.movie_app.presentation.viewmodel.MovieListViewModel
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged

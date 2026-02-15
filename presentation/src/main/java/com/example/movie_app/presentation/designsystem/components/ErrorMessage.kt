@@ -1,4 +1,4 @@
-package com.example.movie_app.presentation.designsystem.molecules
+package com.example.movie_app.presentation.designsystem.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
