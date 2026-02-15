@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -35,12 +37,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.movie_app.domain.model.Movie
+import com.example.movie_app.presentation.designsystem.components.AutocompleteDropdown
 import com.example.movie_app.presentation.designsystem.components.LoadingIndicator
 import com.example.movie_app.presentation.designsystem.components.EmptyState
 import com.example.movie_app.presentation.designsystem.components.ErrorMessage
 import com.example.movie_app.presentation.designsystem.components.MovieCard
 import com.example.movie_app.presentation.designsystem.theme.MovieAppTheme
 import com.example.movie_app.presentation.viewmodel.MovieListViewModel
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
@@ -50,7 +54,7 @@ import kotlinx.coroutines.flow.map
 /**
  * Screen displaying a list of movies with infinite scrolling and search functionality.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, FlowPreview::class)
 @Composable
 fun MovieListScreen(
     onMovieClick: (Int) -> Unit,
@@ -88,29 +92,77 @@ fun MovieListScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Search bar
+            // Search bar with autocomplete
             var searchQuery by remember { mutableStateOf(uiState.searchQuery) }
-            TextField(
-                value = searchQuery,
-                onValueChange = { newQuery ->
-                    searchQuery = newQuery
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                placeholder = { Text("Search movies...") },
-                singleLine = true
-            )
+            
+            // Sync local state with ViewModel state when it changes externally
+            LaunchedEffect(uiState.searchQuery) {
+                if (searchQuery != uiState.searchQuery) {
+                    searchQuery = uiState.searchQuery
+                }
+            }
+            
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    TextField(
+                        value = searchQuery,
+                        onValueChange = { newQuery ->
+                            searchQuery = newQuery
+                            val trimmedQuery = newQuery.trim()
+                            
+                            // If query is cleared, immediately reset to popular movies
+                            if (trimmedQuery.isBlank()) {
+                                viewModel.resetSearch()
+                            } else if (trimmedQuery.length >= 2) {
+                                // Show autocomplete for queries with 2+ characters
+                                viewModel.getAutocompleteSuggestions(trimmedQuery)
+                            } else {
+                                // Hide autocomplete for queries with < 2 characters
+                                viewModel.hideAutocomplete()
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        placeholder = { Text("Search movies...") },
+                        singleLine = true
+                    )
 
-            // Debounced search
+                    // Autocomplete dropdown
+                    if (uiState.showAutocomplete && uiState.autocompleteSuggestions.isNotEmpty()) {
+                        AutocompleteDropdown(
+                            suggestions = uiState.autocompleteSuggestions,
+                            onSuggestionClick = { movie ->
+                                viewModel.selectAutocompleteSuggestion(movie)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
+                                .offset(y = (-8).dp)
+                        )
+                    }
+                }
+            }
+
+            // Debounced search (for full search results)
             LaunchedEffect(Unit) {
                 snapshotFlow { searchQuery }
                     .map { it.trim() }
                     .distinctUntilChanged()
                     .drop(1) // ignore the initial value (prevents double-load on first composition / back navigation)
-                    .debounce(500)
-                    .filter { it != uiState.searchQuery }
-                    .collect { viewModel.searchMovies(it) }
+                    .debounce(800) // Longer debounce for full search
+                    .collect { trimmedQuery ->
+                        when {
+                            trimmedQuery.isBlank() -> {
+                                // Query cleared - reset to popular movies (handled immediately in onValueChange)
+                                // This is a fallback in case debounce fires
+                            }
+                            trimmedQuery.length >= 2 && trimmedQuery != uiState.searchQuery -> {
+                                // Only trigger full search if query is different from current state
+                                viewModel.searchMovies(trimmedQuery)
+                            }
+                        }
+                    }
             }
 
             Box(modifier = Modifier.fillMaxSize()) {

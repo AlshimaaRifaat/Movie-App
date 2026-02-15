@@ -198,6 +198,219 @@ class MovieListViewModelTest {
         assertEquals("More Search Results", viewModel.uiState.value.movies.first().title)
     }
 
+    @Test
+    fun `getAutocompleteSuggestions shows suggestions for valid query`() = runTest {
+        advanceUntilIdle()
+        val query = "batman"
+        val suggestions = listOf(
+            createMockMovie(1, "Batman"),
+            createMockMovie(2, "Batman Begins"),
+            createMockMovie(3, "The Dark Knight")
+        )
+
+        coEvery { searchMoviesUseCase(query, 1) } returns flow {
+            emit(Result.Loading)
+            emit(Result.Success(suggestions))
+        }
+
+        viewModel.getAutocompleteSuggestions(query)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(3, state.autocompleteSuggestions.size)
+        assertTrue(state.showAutocomplete)
+    }
+
+    @Test
+    fun `getAutocompleteSuggestions limits to 5 suggestions`() = runTest {
+        advanceUntilIdle()
+        val query = "test"
+        val manySuggestions = (1..10).map { createMockMovie(it, "Test Movie $it") }
+
+        coEvery { searchMoviesUseCase(query, 1) } returns flow {
+            emit(Result.Loading)
+            emit(Result.Success(manySuggestions))
+        }
+
+        viewModel.getAutocompleteSuggestions(query)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(5, state.autocompleteSuggestions.size)
+        assertTrue(state.showAutocomplete)
+    }
+
+    @Test
+    fun `getAutocompleteSuggestions hides autocomplete for blank query`() = runTest {
+        advanceUntilIdle()
+        
+        viewModel.getAutocompleteSuggestions("")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.autocompleteSuggestions.isEmpty())
+        assertFalse(state.showAutocomplete)
+    }
+
+    @Test
+    fun `getAutocompleteSuggestions hides autocomplete for short query`() = runTest {
+        advanceUntilIdle()
+        
+        viewModel.getAutocompleteSuggestions("a")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.autocompleteSuggestions.isEmpty())
+        assertFalse(state.showAutocomplete)
+    }
+
+    @Test
+    fun `getAutocompleteSuggestions handles errors gracefully`() = runTest {
+        advanceUntilIdle()
+        val query = "test"
+        val error = Exception("Network error")
+
+        coEvery { searchMoviesUseCase(query, 1) } returns flow {
+            emit(Result.Loading)
+            emit(Result.Error(error, error.message))
+        }
+
+        viewModel.getAutocompleteSuggestions(query)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.autocompleteSuggestions.isEmpty())
+        assertFalse(state.showAutocomplete)
+    }
+
+    @Test
+    fun `hideAutocomplete clears suggestions and hides dropdown`() = runTest {
+        advanceUntilIdle()
+        val query = "test"
+        val suggestions = listOf(createMockMovie(1, "Test Movie"))
+
+        coEvery { searchMoviesUseCase(query, 1) } returns flow {
+            emit(Result.Loading)
+            emit(Result.Success(suggestions))
+        }
+
+        viewModel.getAutocompleteSuggestions(query)
+        advanceUntilIdle()
+
+        var state = viewModel.uiState.value
+        assertTrue(state.showAutocomplete)
+        assertEquals(1, state.autocompleteSuggestions.size)
+
+        viewModel.hideAutocomplete()
+
+        state = viewModel.uiState.value
+        assertFalse(state.showAutocomplete)
+        assertTrue(state.autocompleteSuggestions.isEmpty())
+    }
+
+    @Test
+    fun `resetSearch clears search and returns to popular movies`() = runTest {
+        advanceUntilIdle()
+        val query = "test"
+        val searchResults = listOf(createMockMovie(1, "Test Movie"))
+
+        // Set up search mode
+        coEvery { searchMoviesUseCase(query, 1) } returns flow {
+            emit(Result.Loading)
+            emit(Result.Success(searchResults))
+        }
+        viewModel.searchMovies(query)
+        advanceUntilIdle()
+
+        var state = viewModel.uiState.value
+        assertTrue(state.isSearchMode)
+        assertEquals(query, state.searchQuery)
+
+        // Mock popular movies for reset
+        coEvery { getPopularMoviesUseCase(1) } returns flow {
+            emit(Result.Loading)
+            emit(Result.Success(listOf(createMockMovie(10, "Popular Movie"))))
+        }
+
+        viewModel.resetSearch()
+        advanceUntilIdle()
+
+        state = viewModel.uiState.value
+        assertFalse(state.isSearchMode)
+        assertEquals("", state.searchQuery)
+        assertTrue(state.autocompleteSuggestions.isEmpty())
+        assertFalse(state.showAutocomplete)
+        // After loadMovies() loads page 1, currentPage becomes 2
+        assertEquals(2, state.currentPage)
+    }
+
+    @Test
+    fun `selectAutocompleteSuggestion triggers search and hides autocomplete`() = runTest {
+        advanceUntilIdle()
+        val movie = createMockMovie(1, "Batman")
+        val searchResults = listOf(movie)
+
+        // First set up autocomplete suggestions
+        coEvery { searchMoviesUseCase("bat", 1) } returns flow {
+            emit(Result.Loading)
+            emit(Result.Success(listOf(movie)))
+        }
+        viewModel.getAutocompleteSuggestions("bat")
+        advanceUntilIdle()
+
+        var state = viewModel.uiState.value
+        assertTrue(state.showAutocomplete)
+
+        // Mock full search when suggestion is selected
+        coEvery { searchMoviesUseCase("Batman", 1) } returns flow {
+            emit(Result.Loading)
+            emit(Result.Success(searchResults))
+        }
+
+        viewModel.selectAutocompleteSuggestion(movie)
+        advanceUntilIdle()
+
+        state = viewModel.uiState.value
+        assertEquals("Batman", state.searchQuery)
+        assertFalse(state.showAutocomplete)
+        assertTrue(state.autocompleteSuggestions.isEmpty())
+        assertTrue(state.isSearchMode)
+        assertEquals(1, state.movies.size)
+    }
+
+    @Test
+    fun `searchMovies with blank query resets to popular movies`() = runTest {
+        advanceUntilIdle()
+        val query = "test"
+        val searchResults = listOf(createMockMovie(1, "Test Movie"))
+
+        // Set up search mode first
+        coEvery { searchMoviesUseCase(query, 1) } returns flow {
+            emit(Result.Loading)
+            emit(Result.Success(searchResults))
+        }
+        viewModel.searchMovies(query)
+        advanceUntilIdle()
+
+        var state = viewModel.uiState.value
+        assertTrue(state.isSearchMode)
+
+        // Mock popular movies for reset
+        coEvery { getPopularMoviesUseCase(1) } returns flow {
+            emit(Result.Loading)
+            emit(Result.Success(listOf(createMockMovie(10, "Popular Movie"))))
+        }
+
+        viewModel.searchMovies("")
+        advanceUntilIdle()
+
+        state = viewModel.uiState.value
+        assertFalse(state.isSearchMode)
+        assertEquals("", state.searchQuery)
+        // After loadMovies() loads page 1, currentPage becomes 2
+        assertEquals(2, state.currentPage)
+    }
+
     private fun createMockMovie(id: Int, title: String): Movie {
         return Movie(
             id = id,

@@ -25,7 +25,9 @@ data class MovieListUiState(
     val currentPage: Int = 1,
     val hasMore: Boolean = true,
     val searchQuery: String = "",
-    val isSearchMode: Boolean = false
+    val isSearchMode: Boolean = false,
+    val autocompleteSuggestions: List<Movie> = emptyList(),
+    val showAutocomplete: Boolean = false
 )
 
 /**
@@ -178,6 +180,101 @@ class MovieListViewModel @Inject constructor(
         } else {
             loadMovies()
         }
+    }
+
+    private var autocompleteJob: kotlinx.coroutines.Job? = null
+
+    /**
+     * Gets autocomplete suggestions for the given query.
+     * Limits results to first 5 suggestions for better UX.
+     * Cancels previous autocomplete requests to prevent race conditions.
+     */
+    fun getAutocompleteSuggestions(query: String) {
+        // Cancel previous autocomplete request
+        autocompleteJob?.cancel()
+        
+        if (query.isBlank() || query.length < 2) {
+            _uiState.value = _uiState.value.copy(
+                autocompleteSuggestions = emptyList(),
+                showAutocomplete = false
+            )
+            return
+        }
+
+        autocompleteJob = viewModelScope.launch {
+            searchMoviesUseCase(query, 1)
+                .catch { e ->
+                    _uiState.value = _uiState.value.copy(
+                        autocompleteSuggestions = emptyList(),
+                        showAutocomplete = false
+                    )
+                }
+                .collect { result ->
+                    when (result) {
+                        is Result.Loading -> {
+                            // Don't update suggestions while loading
+                        }
+                        is Result.Success -> {
+                            val suggestions = result.data.take(5) // Limit to 5 suggestions
+                            _uiState.value = _uiState.value.copy(
+                                autocompleteSuggestions = suggestions,
+                                showAutocomplete = suggestions.isNotEmpty()
+                            )
+                        }
+                        is Result.Error -> {
+                            _uiState.value = _uiState.value.copy(
+                                autocompleteSuggestions = emptyList(),
+                                showAutocomplete = false
+                            )
+                        }
+                    }
+                }
+        }
+    }
+
+    /**
+     * Hides the autocomplete dropdown and cancels any pending autocomplete requests.
+     */
+    fun hideAutocomplete() {
+        autocompleteJob?.cancel()
+        _uiState.value = _uiState.value.copy(
+            showAutocomplete = false,
+            autocompleteSuggestions = emptyList()
+        )
+    }
+
+    /**
+     * Resets search and returns to popular movies.
+     * Clears autocomplete and cancels any pending requests.
+     */
+    fun resetSearch() {
+        autocompleteJob?.cancel()
+        _uiState.value = _uiState.value.copy(
+            searchQuery = "",
+            isSearchMode = false,
+            movies = emptyList(),
+            currentPage = 1,
+            hasMore = true,
+            isLoading = false,
+            error = null,
+            autocompleteSuggestions = emptyList(),
+            showAutocomplete = false
+        )
+        loadMovies()
+    }
+
+    /**
+     * Selects a movie from autocomplete suggestions.
+     * Cancels any pending autocomplete requests and triggers full search.
+     */
+    fun selectAutocompleteSuggestion(movie: Movie) {
+        autocompleteJob?.cancel()
+        _uiState.value = _uiState.value.copy(
+            searchQuery = movie.title,
+            showAutocomplete = false,
+            autocompleteSuggestions = emptyList()
+        )
+        searchMovies(movie.title)
     }
 }
 
