@@ -1,9 +1,11 @@
 package com.example.movie_app.domain.usecase
 
 import com.example.movie_app.domain.model.Movie
+import com.example.movie_app.domain.model.Result
 import com.example.movie_app.domain.repository.MovieRepository
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 
 /**
  * Use case for searching movies.
@@ -20,7 +22,7 @@ class SearchMoviesUseCase @Inject constructor(
      */
     operator fun invoke(query: String, page: Int = 1): Flow<Result<List<Movie>>> {
         return if (query.isBlank()) {
-            kotlinx.coroutines.flow.flow { emit(Result.success(emptyList())) }
+            flow { emit(Result.Success(emptyList())) }
         } else {
             repository.searchMovies(query, page)
         }

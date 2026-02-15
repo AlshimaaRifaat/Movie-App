@@ -2,6 +2,7 @@ package com.example.movie_app.domain.usecase
 
 import app.cash.turbine.test
 import com.example.movie_app.domain.model.Movie
+import com.example.movie_app.domain.model.Result
 import com.example.movie_app.domain.repository.MovieRepository
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -34,13 +35,19 @@ class SearchMoviesUseCaseTest {
         )
 
         coEvery { repository.searchMovies("test", 1) } returns flow {
-            emit(Result.success(mockMovies))
+            emit(Result.Loading)
+            emit(Result.Success(mockMovies))
         }
 
         useCase("test", 1).test {
+            // First item should be Loading
+            val loadingResult = awaitItem()
+            assertTrue(loadingResult.isLoading)
+            
+            // Second item should be Success
             val result = awaitItem()
             assertTrue(result.isSuccess)
-            assertEquals(mockMovies, result.getOrNull())
+            assertEquals(mockMovies, result.getDataOrNull())
             awaitComplete()
         }
     }
@@ -52,7 +59,7 @@ class SearchMoviesUseCaseTest {
         useCase("", 1).test {
             val result = awaitItem()
             assertTrue(result.isSuccess)
-            val movies = result.getOrNull()
+            val movies = result.getDataOrNull()
             assertTrue(movies?.isEmpty() == true)
             awaitComplete()
         }
@@ -63,10 +70,16 @@ class SearchMoviesUseCaseTest {
         val mockMovies = emptyList<Movie>()
 
         coEvery { repository.searchMovies("test", 1) } returns flow {
-            emit(Result.success(mockMovies))
+            emit(Result.Loading)
+            emit(Result.Success(mockMovies))
         }
 
         useCase("test").test {
+            // First item should be Loading
+            val loadingResult = awaitItem()
+            assertTrue(loadingResult.isLoading)
+            
+            // Second item should be Success
             val result = awaitItem()
             assertTrue(result.isSuccess)
             awaitComplete()
@@ -77,13 +90,22 @@ class SearchMoviesUseCaseTest {
     fun `invoke handles errors correctly`() = runTest {
         val error = Exception("Search failed")
         coEvery { repository.searchMovies("test", 1) } returns flow {
-            emit(Result.failure(error))
+            emit(Result.Loading)
+            emit(Result.Error(error, error.message))
         }
 
         useCase("test", 1).test {
+            // First item should be Loading
+            val loadingResult = awaitItem()
+            assertTrue(loadingResult.isLoading)
+            
+            // Second item should be Error
             val result = awaitItem()
-            assertTrue(result.isFailure)
-            assertEquals(error, result.exceptionOrNull())
+            assertTrue(result.isError)
+            when (val errorResult = result) {
+                is Result.Error -> assertEquals(error, errorResult.exception)
+                else -> throw AssertionError("Expected Result.Error")
+            }
             awaitComplete()
         }
     }

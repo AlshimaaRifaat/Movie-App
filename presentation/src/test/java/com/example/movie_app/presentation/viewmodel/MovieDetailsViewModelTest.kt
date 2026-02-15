@@ -3,6 +3,7 @@ package com.example.movie_app.presentation.viewmodel
 import com.example.movie_app.domain.model.Genre
 import com.example.movie_app.domain.model.MovieDetails
 import com.example.movie_app.domain.model.ProductionCompany
+import com.example.movie_app.domain.model.Result
 import com.example.movie_app.domain.usecase.GetMovieDetailsUseCase
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -54,7 +55,8 @@ class MovieDetailsViewModelTest {
         val mockDetails = createMockMovieDetails(1, "Test Movie")
 
         coEvery { getMovieDetailsUseCase(1) } returns flow {
-            emit(Result.success(mockDetails))
+            emit(Result.Loading)
+            emit(Result.Success(mockDetails))
         }
 
         viewModel.loadMovieDetails(1)
@@ -72,7 +74,8 @@ class MovieDetailsViewModelTest {
     fun `loadMovieDetails failure updates error state`() = runTest {
         val error = java.net.UnknownHostException("Movie not found")
         coEvery { getMovieDetailsUseCase(1) } returns flow {
-            emit(Result.failure(error))
+            emit(Result.Loading)
+            emit(Result.Error(error, error.message))
         }
 
         viewModel.loadMovieDetails(1)
@@ -95,7 +98,8 @@ class MovieDetailsViewModelTest {
         val mockDetails = createMockMovieDetails(1, "Test Movie")
 
         coEvery { getMovieDetailsUseCase(1) } returns flow {
-            emit(Result.success(mockDetails))
+            emit(Result.Loading)
+            emit(Result.Success(mockDetails))
         }
 
         viewModel.retry(1)

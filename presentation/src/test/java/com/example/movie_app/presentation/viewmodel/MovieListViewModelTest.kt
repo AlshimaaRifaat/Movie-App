@@ -1,6 +1,7 @@
 package com.example.movie_app.presentation.viewmodel
 
 import com.example.movie_app.domain.model.Movie
+import com.example.movie_app.domain.model.Result
 import com.example.movie_app.domain.usecase.GetPopularMoviesUseCase
 import com.example.movie_app.domain.usecase.SearchMoviesUseCase
 import io.mockk.coEvery
@@ -36,7 +37,8 @@ class MovieListViewModelTest {
         // Mock the initial loadMovies() call in init block to return a movie
         // so that hasMore is true and we can test pagination.
         coEvery { getPopularMoviesUseCase(1) } returns flow {
-            emit(Result.success(listOf(createMockMovie(0, "Initial Movie"))))
+            emit(Result.Loading)
+            emit(Result.Success(listOf(createMockMovie(0, "Initial Movie"))))
         }
         viewModel = MovieListViewModel(getPopularMoviesUseCase, searchMoviesUseCase)
     }
@@ -66,7 +68,10 @@ class MovieListViewModelTest {
             createMockMovie(2, "Movie 2")
         )
         // Mock for page 2
-        coEvery { getPopularMoviesUseCase(2) } returns flow { emit(Result.success(mockMovies)) }
+        coEvery { getPopularMoviesUseCase(2) } returns flow {
+            emit(Result.Loading)
+            emit(Result.Success(mockMovies))
+        }
 
         viewModel.loadMovies()
         advanceUntilIdle()
@@ -85,7 +90,10 @@ class MovieListViewModelTest {
 
         val error = java.net.UnknownHostException("Network error")
         // Mock for page 2 to fail
-        coEvery { getPopularMoviesUseCase(2) } returns flow { emit(Result.failure(error)) }
+        coEvery { getPopularMoviesUseCase(2) } returns flow {
+            emit(Result.Loading)
+            emit(Result.Error(error, error.message))
+        }
 
         viewModel.loadMovies()
         advanceUntilIdle()
@@ -105,7 +113,8 @@ class MovieListViewModelTest {
         val mockMovies = listOf(createMockMovie(1, "Test Movie"))
 
         coEvery { searchMoviesUseCase(query, 1) } returns flow {
-            emit(Result.success(mockMovies))
+            emit(Result.Loading)
+            emit(Result.Success(mockMovies))
         }
 
         viewModel.searchMovies(query)
@@ -124,7 +133,10 @@ class MovieListViewModelTest {
         advanceUntilIdle() // Init loads page 1
 
         val error = java.io.IOException("Some error")
-        coEvery { getPopularMoviesUseCase(2) } returns flow { emit(Result.failure(error)) }
+        coEvery { getPopularMoviesUseCase(2) } returns flow {
+            emit(Result.Loading)
+            emit(Result.Error(error, error.message))
+        }
         
         viewModel.loadMovies()
         advanceUntilIdle()
@@ -142,7 +154,10 @@ class MovieListViewModelTest {
         // initial state: not search mode
 
         val mockMovies = listOf(createMockMovie(1, "Movie 1"))
-        coEvery { getPopularMoviesUseCase(2) } returns flow { emit(Result.success(mockMovies)) }
+        coEvery { getPopularMoviesUseCase(2) } returns flow {
+            emit(Result.Loading)
+            emit(Result.Success(mockMovies))
+        }
 
         viewModel.retry()
         advanceUntilIdle()
@@ -156,7 +171,10 @@ class MovieListViewModelTest {
         advanceUntilIdle()
         val query = "test"
         val searchResults = listOf(createMockMovie(10, "Search Result"))
-        coEvery { searchMoviesUseCase(query, 1) } returns flow { emit(Result.success(searchResults)) }
+        coEvery { searchMoviesUseCase(query, 1) } returns flow {
+            emit(Result.Loading)
+            emit(Result.Success(searchResults))
+        }
 
         // Enter search mode
         viewModel.searchMovies(query)
@@ -167,7 +185,10 @@ class MovieListViewModelTest {
 
         // Mock retry call
         val moreSearchResults = listOf(createMockMovie(11, "More Search Results"))
-        coEvery { searchMoviesUseCase(query, 1) } returns flow { emit(Result.success(moreSearchResults)) }
+        coEvery { searchMoviesUseCase(query, 1) } returns flow {
+            emit(Result.Loading)
+            emit(Result.Success(moreSearchResults))
+        }
 
         viewModel.retry()
         advanceUntilIdle()

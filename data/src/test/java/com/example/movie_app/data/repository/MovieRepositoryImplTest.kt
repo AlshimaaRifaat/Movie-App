@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.example.movie_app.data.dto.MovieDto
 import com.example.movie_app.data.dto.MoviesResponseDto
 import com.example.movie_app.data.remote.TmdbApiService
+import com.example.movie_app.domain.model.Result
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
@@ -50,9 +51,14 @@ class MovieRepositoryImplTest {
         coEvery { apiService.getPopularMovies(page = 1) } returns mockResponse
 
         repository.getPopularMovies(1).test {
+            // First item should be Loading
+            val loadingResult = awaitItem()
+            assertTrue(loadingResult.isLoading)
+            
+            // Second item should be Success
             val result = awaitItem()
             assertTrue(result.isSuccess)
-            val movies = result.getOrNull()!!
+            val movies = result.getDataOrNull()!!
             assertEquals(1, movies.size)
             assertEquals("Test Movie", movies[0].title)
             awaitComplete()
@@ -65,11 +71,16 @@ class MovieRepositoryImplTest {
         coEvery { apiService.getPopularMovies(page = 1) } throws error
 
         repository.getPopularMovies(1).test {
+            // First item should be Loading
+            val loadingResult = awaitItem()
+            assertTrue(loadingResult.isLoading)
+            
+            // Second item should be Error
             val result = awaitItem()
-            assertTrue(result.isFailure)
-            val exception = result.exceptionOrNull()
-            assertTrue(exception is Exception)
-            assertEquals("Network error", exception?.message)
+            assertTrue(result.isError)
+            assertTrue(result is Result.Error)
+            val errorResult = result as Result.Error
+            assertEquals("Network error", errorResult.exception.message)
             awaitComplete()
         }
     }
@@ -95,9 +106,14 @@ class MovieRepositoryImplTest {
         coEvery { apiService.getMovieDetails(1) } returns mockDetails
 
         repository.getMovieDetails(1).test {
+            // First item should be Loading
+            val loadingResult = awaitItem()
+            assertTrue(loadingResult.isLoading)
+            
+            // Second item should be Success
             val result = awaitItem()
             assertTrue(result.isSuccess)
-            val details = result.getOrNull()!!
+            val details = result.getDataOrNull()!!
             assertEquals("Test Movie", details.title)
             assertEquals(120, details.runtime)
             assertEquals(1, details.genres.size)
@@ -129,9 +145,14 @@ class MovieRepositoryImplTest {
         coEvery { apiService.searchMovies(query = "test", page = 1) } returns mockResponse
 
         repository.searchMovies("test", 1).test {
+            // First item should be Loading
+            val loadingResult = awaitItem()
+            assertTrue(loadingResult.isLoading)
+            
+            // Second item should be Success
             val result = awaitItem()
             assertTrue(result.isSuccess)
-            val movies = result.getOrNull()!!
+            val movies = result.getDataOrNull()!!
             assertEquals(1, movies.size)
             assertEquals("Search Movie", movies[0].title)
             awaitComplete()

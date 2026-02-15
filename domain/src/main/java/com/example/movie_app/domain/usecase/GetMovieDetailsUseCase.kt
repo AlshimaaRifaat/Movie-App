@@ -1,6 +1,7 @@
 package com.example.movie_app.domain.usecase
 
 import com.example.movie_app.domain.model.MovieDetails
+import com.example.movie_app.domain.model.Result
 import com.example.movie_app.domain.repository.MovieRepository
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow

@@ -3,6 +3,7 @@ package com.example.movie_app.data.repository
 import com.example.movie_app.data.remote.TmdbApiService
 import com.example.movie_app.domain.model.Movie
 import com.example.movie_app.domain.model.MovieDetails
+import com.example.movie_app.domain.model.Result
 import com.example.movie_app.domain.repository.MovieRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -17,31 +18,34 @@ class MovieRepositoryImpl @Inject constructor(
 ) : MovieRepository {
 
     override fun getPopularMovies(page: Int): Flow<Result<List<Movie>>> = flow {
+        emit(Result.Loading)
         try {
             val response = apiService.getPopularMovies(page = page)
             val movies = response.results.map { it.toDomain() }
-            emit(Result.success(movies))
+            emit(Result.Success(movies))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            emit(Result.Error(e, e.message))
         }
     }
 
     override fun getMovieDetails(movieId: Int): Flow<Result<MovieDetails>> = flow {
+        emit(Result.Loading)
         try {
             val response = apiService.getMovieDetails(movieId)
-            emit(Result.success(response.toDomain()))
+            emit(Result.Success(response.toDomain()))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            emit(Result.Error(e, e.message))
         }
     }
 
     override fun searchMovies(query: String, page: Int): Flow<Result<List<Movie>>> = flow {
+        emit(Result.Loading)
         try {
             val response = apiService.searchMovies(query = query, page = page)
             val movies = response.results.map { it.toDomain() }
-            emit(Result.success(movies))
+            emit(Result.Success(movies))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            emit(Result.Error(e, e.message))
         }
     }
 }

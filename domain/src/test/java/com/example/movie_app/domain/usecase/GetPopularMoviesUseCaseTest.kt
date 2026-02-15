@@ -2,6 +2,7 @@ package com.example.movie_app.domain.usecase
 
 import app.cash.turbine.test
 import com.example.movie_app.domain.model.Movie
+import com.example.movie_app.domain.model.Result
 import com.example.movie_app.domain.repository.MovieRepository
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -35,13 +36,19 @@ class GetPopularMoviesUseCaseTest {
         )
 
         coEvery { repository.getPopularMovies(1) } returns flow {
-            emit(Result.success(mockMovies))
+            emit(Result.Loading)
+            emit(Result.Success(mockMovies))
         }
 
         useCase(1).test {
+            // First item should be Loading
+            val loadingResult = awaitItem()
+            assertTrue(loadingResult.isLoading)
+            
+            // Second item should be Success
             val result = awaitItem()
             assertTrue(result.isSuccess)
-            assertEquals(mockMovies, result.getOrNull())
+            assertEquals(mockMovies, result.getDataOrNull())
             awaitComplete()
         }
     }
@@ -51,13 +58,19 @@ class GetPopularMoviesUseCaseTest {
         val mockMovies = emptyList<Movie>()
 
         coEvery { repository.getPopularMovies(1) } returns flow {
-            emit(Result.success(mockMovies))
+            emit(Result.Loading)
+            emit(Result.Success(mockMovies))
         }
 
         useCase().test {
+            // First item should be Loading
+            val loadingResult = awaitItem()
+            assertTrue(loadingResult.isLoading)
+            
+            // Second item should be Success
             val result = awaitItem()
             assertTrue(result.isSuccess)
-            assertEquals(mockMovies, result.getOrNull())
+            assertEquals(mockMovies, result.getDataOrNull())
             awaitComplete()
         }
     }

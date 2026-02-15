@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.example.movie_app.domain.model.Genre
 import com.example.movie_app.domain.model.MovieDetails
 import com.example.movie_app.domain.model.ProductionCompany
+import com.example.movie_app.domain.model.Result
 import com.example.movie_app.domain.repository.MovieRepository
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -34,13 +35,19 @@ class GetMovieDetailsUseCaseTest {
         val mockDetails = createMockMovieDetails(1, "Test Movie")
 
         coEvery { repository.getMovieDetails(1) } returns flow {
-            emit(Result.success(mockDetails))
+            emit(Result.Loading)
+            emit(Result.Success(mockDetails))
         }
 
         useCase(1).test {
+            // First item should be Loading
+            val loadingResult = awaitItem()
+            assertTrue(loadingResult.isLoading)
+            
+            // Second item should be Success
             val result = awaitItem()
             assertTrue(result.isSuccess)
-            val details = result.getOrNull()
+            val details = result.getDataOrNull()
             assertNotNull(details)
             assertEquals("Test Movie", details?.title)
             assertEquals(1, details?.id)
@@ -52,13 +59,22 @@ class GetMovieDetailsUseCaseTest {
     fun `invoke handles errors correctly`() = runTest {
         val error = Exception("Movie not found")
         coEvery { repository.getMovieDetails(1) } returns flow {
-            emit(Result.failure(error))
+            emit(Result.Loading)
+            emit(Result.Error(error, error.message))
         }
 
         useCase(1).test {
+            // First item should be Loading
+            val loadingResult = awaitItem()
+            assertTrue(loadingResult.isLoading)
+            
+            // Second item should be Error
             val result = awaitItem()
-            assertTrue(result.isFailure)
-            assertEquals(error, result.exceptionOrNull())
+            assertTrue(result.isError)
+            when (val errorResult = result) {
+                is Result.Error -> assertEquals(error, errorResult.exception)
+                else -> throw AssertionError("Expected Result.Error")
+            }
             awaitComplete()
         }
     }

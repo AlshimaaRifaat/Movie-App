@@ -3,6 +3,7 @@ package com.example.movie_app.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.movie_app.domain.model.MovieDetails
+import com.example.movie_app.domain.model.Result
 import com.example.movie_app.domain.usecase.GetMovieDetailsUseCase
 import com.example.movie_app.presentation.util.ErrorHandler
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -39,8 +40,6 @@ class MovieDetailsViewModel @Inject constructor(
      */
     fun loadMovieDetails(movieId: Int) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-
             getMovieDetailsUseCase(movieId)
                 .catch { e ->
                     _uiState.value = _uiState.value.copy(
@@ -49,19 +48,26 @@ class MovieDetailsViewModel @Inject constructor(
                     )
                 }
                 .collect { result ->
-                    if (result.isSuccess) {
-                        val details = result.getOrNull()
-                        _uiState.value = _uiState.value.copy(
-                            movieDetails = details,
-                            isLoading = false,
-                            error = null // Clear any previous errors on success
-                        )
-                    } else {
-                        val error = result.exceptionOrNull()
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            error = ErrorHandler.getErrorMessage(error)
-                        )
+                    when (result) {
+                        is Result.Loading -> {
+                            _uiState.value = _uiState.value.copy(
+                                isLoading = true,
+                                error = null
+                            )
+                        }
+                        is Result.Success -> {
+                            _uiState.value = _uiState.value.copy(
+                                movieDetails = result.data,
+                                isLoading = false,
+                                error = null // Clear any previous errors on success
+                            )
+                        }
+                        is Result.Error -> {
+                            _uiState.value = _uiState.value.copy(
+                                isLoading = false,
+                                error = ErrorHandler.getErrorMessage(result.exception)
+                            )
+                        }
                     }
                 }
         }
