@@ -10,7 +10,10 @@ A modern Android application built with Jetpack Compose that displays popular mo
   - Rating, votes, runtime, and release date
   - Genres and production companies
   - Overview and tagline
-- **Search**: Real-time movie search with debounced autocomplete
+- **Search with Autocomplete**: Real-time movie search with autocomplete dropdown suggestions
+  - Debounced search (800ms) for full results
+  - Instant autocomplete suggestions (shows up to 5 results)
+  - Smart state management with proper edge case handling
 - **Modern UI**: Beautiful Material Design 3 interface with dark/light theme support
 - **White Label Support**: Easy customization with dynamic color theming
 
@@ -24,13 +27,13 @@ The app follows **Clean Architecture** principles with clear separation of conce
 1. **Presentation Layer** (presentation module)
    - Jetpack Compose UI screens
    - ViewModels handling UI state
-   - Design system following Atomic Design
+   - Design system with reusable components
    - Navigation components
 
 2. **Domain Layer** (domain module)
    - Pure Kotlin business logic
    - Use cases (Single Responsibility Principle)
-   - Domain models
+   - Domain models including custom `Result` sealed class with Loading, Success, and Error states
    - Repository interfaces
 
 3. **Data Layer** (data module)
@@ -52,14 +55,18 @@ The app follows **Clean Architecture** principles with clear separation of conce
 - **MVVM**: Model-View-ViewModel pattern
 - **Repository Pattern**: Data abstraction layer
 - **SOLID Principles**: Maintainable and scalable code
-- **Atomic Design**: Component-based design system
+- **Component-Based Design**: Reusable UI components organized in a components folder
 
 ### Dependency Injection
 - **Hilt (Dagger)**: Type-safe dependency injection
 - **Component Scopes**:
-  - `SingletonComponent`: Used for repositories and network components (app lifetime)
+  - `SingletonComponent`: Used for network components (OkHttpClient, Retrofit, API services) - app lifetime
+  - `ActivityRetainedComponent`: Used for repositories - survives configuration changes, scoped to activity lifecycle
   - `ViewModelComponent`: Used for use cases provided to ViewModels
-  - **Scalability**: Easy to add new repositories by adding `@Binds` methods in `DataModule`
+- **Module Organization**:
+  - `NetworkModule`: Separate module for network dependencies (SingletonComponent)
+  - `RepositoryModule`: Separate module for repository bindings (ActivityRetainedComponent)
+  - **Scalability**: Easy to add new repositories by adding `@Binds` methods in `RepositoryModule`
 
 ### Networking
 - **Retrofit**: Type-safe HTTP client for REST API
@@ -84,12 +91,16 @@ The app follows **Clean Architecture** principles with clear separation of conce
 
 ## Design System
 
-The app follows **Atomic Design** principles:
+The app uses a **component-based design system** with reusable UI components:
 
-- **Atoms**: Basic reusable components (`LoadingIndicator`)
-- **Molecules**: Simple component combinations (`ErrorMessage`)
-- **Organisms**: Complex components (`MovieCard`)
-- **Templates/Pages**: Full screens (`MovieListScreen`, `MovieDetailsScreen`)
+- **Components**: All reusable UI components are organized in `presentation/designsystem/components/`
+  - `LoadingIndicator`: Loading state indicator
+  - `ErrorMessage`: Error display with retry button
+  - `EmptyState`: Empty state message display
+  - `AutocompleteDropdown`: Search autocomplete suggestions dropdown
+  - `MovieCard`: Movie card component for list display
+- **Screens**: Full screen composables (`MovieListScreen`, `MovieDetailsScreen`)
+- **Preview Support**: All components include `@Preview` composables for Android Studio's Design panel
 
 ## Security
 
@@ -185,29 +196,44 @@ tmdbApiKey=your_api_key_here
 - **SOLID Principles**: Maintainable and scalable codebase
 - **100% Kotlin**: Modern language features
 - **Comprehensive Testing**: Unit tests for ViewModels, Use Cases, and Repositories
+  - Tests cover autocomplete functionality, edge cases, and state management
 - **Code Documentation**: KDoc comments throughout
+- **State Management**: Custom `Result<T>` sealed class ensures consistent state handling across layers
 
 ### Architecture Excellence
 - **Multi-Module Structure**: Clear module boundaries (`app`, `presentation`, `domain`, `data`)
 - **Dependency Injection**: Hilt for type-safe DI with proper component scoping
+  - `NetworkModule`: Separate module for network dependencies (SingletonComponent)
+  - `RepositoryModule`: Separate module for repository bindings (ActivityRetainedComponent)
 - **Repository Pattern**: Data abstraction layer with interface-based design
 - **Use Cases**: Single responsibility business logic
-- **Scalable DI**: `SingletonComponent` for repositories (app lifetime) - easy to extend with new repositories
+- **State Management**: Custom `Result<T>` sealed class with Loading, Success, and Error states
+  - Loading state emitted before API calls
+  - Proper state propagation through all layers
+  - Better UX with explicit loading indicators
+- **Lifecycle-Aware Scoping**: Repositories use `ActivityRetainedComponent` for optimal memory management
 
 ### User Experience
 - **Material Design 3**: Modern UI with dynamic colors
 - **Infinite Scrolling**: Smooth pagination with automatic loading
-- **Search with Autocomplete**: Real-time search with debouncing
+- **Search with Autocomplete Dropdown**: 
+  - Real-time autocomplete suggestions (shows up to 5 results)
+  - Debounced full search (800ms) for complete results
+  - Smart edge case handling (query clearing, rapid typing, state synchronization)
+  - Cancels previous requests to prevent race conditions
 - **Error Handling**: User-friendly error messages with retry functionality
-- **Loading States**: Clear loading indicators
+- **Loading States**: Custom `Result` sealed class with Loading, Success, and Error states
 - **Empty States**: Helpful messages when no content is available
 
 ### Developer Experience
 - **Type-Safe Navigation**: Compile-time navigation safety
-- **Design System**: Atomic Design with reusable components (Atoms, Molecules, Organisms)
+- **Design System**: Component-based design with reusable UI components organized in a components folder
+- **Preview Composables**: All UI components include `@Preview` functions for Android Studio's Design panel
 - **White Label Support**: Easy customization through centralized theming
 - **Code Quality Tools**: Detekt, ProGuard configured
-- **Comprehensive Testing**: Unit tests with MockK and Turbine
+- **Comprehensive Testing**: Unit tests for ViewModels, Use Cases, and Repositories with MockK and Turbine
+  - Tests cover autocomplete functionality and edge cases
+  - Tests verify proper state management with Result sealed class
 
 
 **Note**: This app uses The Movie Database (TMDB) API. Make sure to add your API key to `local.properties` before running the app.
